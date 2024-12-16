@@ -1,49 +1,315 @@
-import snowflake.snowpark
-from snowflake.snowpark import Session
+# import os
+# import streamlit as st
+# import snowflake.connector
+# from datetime import datetime
 
-conn = {
-    "user": "BINDU",
-    "password": "B!ndu@41",
-    "account": "jfduvyp-sb86292",
-    "warehouse": "COMPUTE_WH",
-    "database": "FIVETRAN_DATABASE",
-    "schema": "SNOW_SCHEMA"
-}
+# class ChatHistory:
+#     def __init__(self):
+#         """Initialize connection parameters from environment variables."""
+#         self.conn_params = {
+#             'user': os.getenv("SNOWFLAKE_USER"),
+#             'password': os.getenv("SNOWFLAKE_PASSWORD"),
+#             'account': os.getenv("SNOWFLAKE_ACCOUNT"),
+#             'warehouse': os.getenv("SNOWFLAKE_WAREHOUSE"),
+#             'database': os.getenv("SNOWFLAKE_DATABASE"),
+#             'schema': os.getenv("SNOWFLAKE_SCHEMA")
+#         }
 
-session = Session.builder.configs(conn).create()
+#     def create_chat_session(self, session_name):
+#         """Create a new chat session in Snowflake and return its session_id."""
+#         insert_query = """
+#         INSERT INTO chat_sessions (session_name, created_at) 
+#         VALUES (%s, CURRENT_TIMESTAMP());
+#         """
+        
+#         select_query = """
+#         SELECT MAX(session_id) FROM chat_sessions;
+#         """
 
-sql = (
-    "CREATE OR REPLACE PROCEDURE states_pro_loc(from_table STRING)\n"
-    "   RETURNS TABLE()\n"
-    "    LANGUAGE PYTHON \n"
-    "    RUNTIME_VERSION ='3.8'\n"
-    "    PACKAGES = ('snowflake-snowpark-python')\n"
-    "    HANDLER = 'data_fun'\n"
-    "AS\n"
-    "$$\n"
-    "import pandas as pd\n"
-    
-    "def data_fun(session, from_table):\n"
-    "    df_business = session.table(from_table)\n"
-    "    pd_df = df_business.to_pandas()\n"
-    "    data_df = session.createDataFrame(pd_df)\n"
-    "    state = [\n"
-    "        ('CA', 'California'), ('MO', 'Missouri'), ('AZ', 'Arizona'), ('TN', 'Tennessee'), ('FL', 'Florida'),\n"
-    "        ('IN', 'Indiana'), ('LA', 'Louisiana'), ('AB', 'Alberta'), ('NV', 'Nevada'), ('ID', 'Idaho'),\n"
-    "        ('NJ', 'New Jersey'), ('IL', 'Illinois'), ('CO', 'Colorado'), ('WA', 'Washington'), ('TX', 'Texas'),\n"
-    "        ('UT', 'Utah'), ('MT', 'Montana'), ('MI', 'Michigan'), ('SD', 'South Dakota'), ('VT', 'Vermont'),\n"
-    "        ('PA', 'Pennsylvania'), ('DE', 'Delaware'), ('NC', 'North Carolina'), ('HI', 'Hawaii'),\n"
-    "       ('XMS', 'Xaimas'), ('MA', 'Massachusetts'), ('VI', 'Virgin Islands')\n"
-    "    ]\n"
-    "    state_df = session.createDataFrame(state, ['state', 'state_names'])\n"
-    "    result_df = data_df.join(state_df, data_df['state'] == state_df['state'], 'left') "  
-    "    .select(data_df['name'], data_df['city'], state_df['state_names'])\n" 
-    "$$;"
-)
+#         try:
+#             with snowflake.connector.connect(**self.conn_params) as conn:
+#                 with conn.cursor() as cursor:
+#                     cursor.execute(insert_query, (session_name,))
+                    
+#                     # Get the last inserted session_id
+#                     cursor.execute(select_query)
+#                     session_id = cursor.fetchone()[0]
+                    
+#             return session_id
+#         except Exception as e:
+#             st.error(f"Error creating session: {e}")
+#             return None
 
 
-result = session.sql(sql)
-result.show()
-sql_call = "CALL states_pro_loc('YELP_ACADEMIC_DATASET_BUSINESS');"
-result1 = session.sql(sql_call)
-result1.show()
+
+#     def add_entry(self, session_id, user_input, response, model_name):
+#         """Add a chat entry with the selected model to the chat_details table for a specific session."""
+#         query = """
+#         INSERT INTO chat_details (session_id, user_input, response, model_name, timestamp) 
+#         VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP);
+#         """
+#         try:
+#             with snowflake.connector.connect(**self.conn_params) as conn:
+#                 with conn.cursor() as cursor:
+#                     cursor.execute(query, (session_id, user_input, response, model_name))
+#         except Exception as e:
+#             st.error(f"Error storing chat entry: {e}")
+
+#     def load_sessions(self):
+#         """Load all chat sessions from Snowflake."""
+#         query = "SELECT session_id, session_name, created_at FROM chat_sessions ORDER BY created_at DESC;"
+#         try:
+#             with snowflake.connector.connect(**self.conn_params) as conn:
+#                 with conn.cursor() as cursor:
+#                     cursor.execute(query)
+#                     sessions = cursor.fetchall()
+#                     return [
+#                         (session_id, session_name, created_at.isoformat() if isinstance(created_at, datetime) else str(created_at))
+#                         for session_id, session_name, created_at in sessions
+#                     ]
+#         except Exception as e:
+#             st.error(f"Error loading sessions: {e}")
+#             return []
+
+#     def load_history(self, session_id):
+#         """Load chat history for a specific session."""
+#         query = "SELECT user_input, response, model_name, timestamp FROM chat_details WHERE session_id = %s ORDER BY timestamp DESC;"
+#         try:
+#             with snowflake.connector.connect(**self.conn_params) as conn:
+#                 with conn.cursor() as cursor:
+#                     cursor.execute(query, (session_id,))
+#                     return [
+#                         {
+#                             'question': user_input,
+#                             'answer': response,
+#                             'model_name': model_name,  # Retrieve model_name
+#                             'timestamp': timestamp.isoformat() if isinstance(timestamp, datetime) else str(timestamp)
+#                         }
+#                         for user_input, response, model_name, timestamp in cursor.fetchall()
+#                     ]
+#         except Exception as e:
+#             st.error(f"Error loading chat history: {e}")
+#             return []
+
+
+
+
+#     def update_session_name(self, session_id, new_name):
+#             """Update the name of an existing session in Snowflake."""
+#             query = "UPDATE chat_sessions SET session_name = %s WHERE session_id = %s;"
+#             try:
+#                 with snowflake.connector.connect(**self.conn_params) as conn:
+#                     with conn.cursor() as cursor:
+#                         cursor.execute(query, (new_name, session_id))
+#             except Exception as e:
+#                 st.error(f"Error updating session name: {e}")
+
+#     def delete_session(self, session_id):
+#             """Delete a chat session and all its chat details from Snowflake."""
+#             try:
+#                 with snowflake.connector.connect(**self.conn_params) as conn:
+#                     with conn.cursor() as cursor:
+#                         cursor.execute("DELETE FROM chat_details WHERE session_id = %s;", (session_id,))
+#                         cursor.execute("DELETE FROM chat_sessions WHERE session_id = %s;", (session_id,))
+#             except Exception as e:
+#                 st.error(f"Error deleting session: {e}")
+#     def save_email_draft(self,session_id, subject, recipient, content, response):
+
+#             """Save an email draft into Snowflake."""
+#             insert_query = """
+#             INSERT INTO email_drafts (session_id, subject, recipient_email, content, response, timestamp) 
+#             VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP());
+#             """
+#             try:
+#                 with snowflake.connector.connect(**self.conn_params) as conn:
+#                     with conn.cursor() as cursor:
+#                         cursor.execute(insert_query, (session_id, subject, recipient, content, response))
+#             except Exception as e:
+#                 st.error(f"Error saving email draft: {e}")
+
+#     def load_email_drafts(self, session_id):
+#             """Load all email drafts associated with a session."""
+#             query = "SELECT subject, recipient_email, content, response, timestamp FROM email_drafts WHERE session_id = %s ORDER BY timestamp DESC;"
+#             try:
+#                 with snowflake.connector.connect(**self.conn_params) as conn:
+#                     with conn.cursor() as cursor:
+#                         cursor.execute(query, (session_id,))
+#                         return [
+#                             {'subject': subject, 'recipient_email': recipient_email, 'content': content, 'response': response, 'timestamp': timestamp.isoformat() if isinstance(timestamp, datetime) else str(timestamp)}
+#                             for subject, recipient_email, content, response, timestamp in cursor.fetchall()
+#                         ]
+#             except Exception as e:
+#                 st.error(f"Error loading email drafts: {e}")
+#                 return []
+#     def delete_email_draft(self, draft_id):
+                
+#             try:
+#                 # Establish the connection using the connection parameters
+#                 with snowflake.connector.connect(**self.conn_params) as conn:
+#                     # Use the cursor to execute the DELETE command
+#                     with conn.cursor() as cursor:
+#                         cursor.execute("DELETE FROM email_drafts WHERE draft_id = %s", (draft_id,))
+#                     # Commit the transaction (not necessary when using 'with' for cursor, but included for clarity)
+#                     conn.commit()
+#             except Exception as e:
+#                 # Handle exceptions if something goes wrong
+#                 print(f"Error deleting email draft: {str(e)}")
+
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+import os
+import streamlit as st
+import snowflake.connector
+from datetime import datetime
+
+class ChatHistory:
+    def __init__(self):
+        """Initialize connection parameters from environment variables."""
+        self.conn_params = {
+            'user': os.getenv("SNOWFLAKE_USER"),
+            'password': os.getenv("SNOWFLAKE_PASSWORD"),
+            'account': os.getenv("SNOWFLAKE_ACCOUNT"),
+            'warehouse': os.getenv("SNOWFLAKE_WAREHOUSE"),
+            'database': os.getenv("SNOWFLAKE_DATABASE"),
+            'schema': os.getenv("SNOWFLAKE_SCHEMA")
+        }
+
+    def create_chat_session(self, session_name):
+        """Create a new chat session in Snowflake and return its session_id."""
+        insert_query = """
+        INSERT INTO chat_sessions (session_name, created_at) 
+        VALUES (%s, CURRENT_TIMESTAMP());
+        """
+        
+        select_query = """
+        SELECT MAX(session_id) FROM chat_sessions;
+        """
+
+        try:
+            with snowflake.connector.connect(**self.conn_params) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(insert_query, (session_name,))
+                    
+                    # Get the last inserted session_id
+                    cursor.execute(select_query)
+                    session_id = cursor.fetchone()[0]
+                    
+            return session_id
+        except Exception as e:
+            st.error(f"Error creating session: {e}")
+            return None
+
+    def add_entry(self, session_id, user_input, response, model_name):
+        """Add a chat entry with the selected model to the chat_details table for a specific session."""
+        query = """
+        INSERT INTO chat_details (session_id, user_input, response, model_name, timestamp) 
+        VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP);
+        """
+        try:
+            with snowflake.connector.connect(**self.conn_params) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, (session_id, user_input, response, model_name))
+        except Exception as e:
+            st.error(f"Error storing chat entry: {e}")
+
+    def load_sessions(self):
+        """Load all chat sessions from Snowflake."""
+        query = "SELECT session_id, session_name, created_at FROM chat_sessions ORDER BY created_at DESC;"
+        try:
+            with snowflake.connector.connect(**self.conn_params) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query)
+                    sessions = cursor.fetchall()
+                    return [
+                        (session_id, session_name, created_at.isoformat() if isinstance(created_at, datetime) else str(created_at))
+                        for session_id, session_name, created_at in sessions
+                    ]
+        except Exception as e:
+            st.error(f"Error loading sessions: {e}")
+            return []
+
+    def load_history(self, session_id):
+        """Load chat history for a specific session."""
+        query = "SELECT user_input, response, model_name, timestamp FROM chat_details WHERE session_id = %s ORDER BY timestamp DESC;"
+        try:
+            with snowflake.connector.connect(**self.conn_params) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, (session_id,))
+                    return [
+                        {
+                            'question': user_input,
+                            'answer': response,
+                            'model_name': model_name,  # Retrieve model_name
+                            'timestamp': timestamp.isoformat() if isinstance(timestamp, datetime) else str(timestamp)
+                        }
+                        for user_input, response, model_name, timestamp in cursor.fetchall()
+                    ]
+        except Exception as e:
+            st.error(f"Error loading chat history: {e}")
+            return []
+
+    def update_session_name(self, session_id, new_name):
+        """Update the name of an existing session in Snowflake."""
+        query = "UPDATE chat_sessions SET session_name = %s WHERE session_id = %s;"
+        try:
+            with snowflake.connector.connect(**self.conn_params) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, (new_name, session_id))
+                    conn.commit()  # Ensure the change is committed to the database
+            st.success(f"Session name updated to '{new_name}'")
+        except Exception as e:
+            st.error(f"Error updating session name: {e}")
+
+    def delete_session(self, session_id):
+        """Delete a chat session and all its chat details from Snowflake."""
+        try:
+            with snowflake.connector.connect(**self.conn_params) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("DELETE FROM chat_details WHERE session_id = %s;", (session_id,))
+                    cursor.execute("DELETE FROM chat_sessions WHERE session_id = %s;", (session_id,))
+                    conn.commit()  # Ensure the session and details are removed
+            st.success(f"Session {session_id} deleted successfully.")
+        except Exception as e:
+            st.error(f"Error deleting session: {e}")
+
+    def save_email_draft(self, session_id, subject, recipient, content, response):
+        """Save an email draft into Snowflake."""
+        insert_query = """
+        INSERT INTO email_drafts (session_id, subject, recipient_email, content, response, timestamp) 
+        VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP());
+        """
+        try:
+            with snowflake.connector.connect(**self.conn_params) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(insert_query, (session_id, subject, recipient, content, response))
+            st.success(f"Email draft saved for session {session_id}.")
+        except Exception as e:
+            st.error(f"Error saving email draft: {e}")
+
+    def load_email_drafts(self, session_id):
+        """Load all email drafts associated with a session."""
+        query = "SELECT subject, recipient_email, content, response, timestamp FROM email_drafts WHERE session_id = %s ORDER BY timestamp DESC;"
+        try:
+            with snowflake.connector.connect(**self.conn_params) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, (session_id,))
+                    return [
+                        {'subject': subject, 'recipient_email': recipient_email, 'content': content, 'response': response, 'timestamp': timestamp.isoformat() if isinstance(timestamp, datetime) else str(timestamp)}
+                        for subject, recipient_email, content, response, timestamp in cursor.fetchall()
+                    ]
+        except Exception as e:
+            st.error(f"Error loading email drafts: {e}")
+            return []
+
+    def delete_email_draft(self, draft_id):
+        """Delete an email draft from Snowflake."""
+        try:
+            with snowflake.connector.connect(**self.conn_params) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("DELETE FROM email_drafts WHERE draft_id = %s", (draft_id,))
+                    conn.commit()
+            st.success(f"Email draft {draft_id} deleted.")
+        except Exception as e:
+            st.error(f"Error deleting email draft: {e}")
