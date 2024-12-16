@@ -1,0 +1,17 @@
+import snowflake.snowpark as snowpark
+from snowflake.snowpark import Session
+from snowflake.snowpark.functions import sproc
+conn = {
+    "user": "BINDU",
+    "password": "B!ndu@41",
+    "account": "jfduvyp-sb86292",
+    "warehouse": "COMPUTE_WH",
+    "database": "FIVETRAN_DATABASE",
+    "schema": "SNOW_SCHEMA"
+}
+
+session = Session.builder.configs(conn).create()
+@sproc(name="my_prc", is_permanent=True, stage_location="@proc",replace=True,packages=["snowflake-snowpark-python"])
+def myproc(Session: snowpark.Session,x:int,y:int)->int:
+    return int(x) * int(y)
+print(myproc(session,3,4))
