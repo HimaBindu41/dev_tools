@@ -1,33 +1,46 @@
-import streamlit as st
-import hashlib
+from snowflake.snowpark import Session
 
-# Initialize a dictionary to store usernames and passwords
-users = {
-    "admin": hashlib.sha256("password".encode()).hexdigest(),
-    "user1": hashlib.sha256("user1_password".encode()).hexdigest(),
-    # Add more users as needed
-}
+def drop_null_columns(table_name):
+    try:
+        # Create Snowpark session
+        conn_parm ={
+            "user":"BINDU",
+            "password":"B!ndu@41",
+            "account":"jfduvyp-sb86292",
+            "warehouse":"COMPUTE_WH",
+            "database":"FIVETRAN_DATABASE",
+            "schema":"SNOW_SCHEMA"
+        }
+        session = Session.builder.configs(conn_parm).create()
 
-def authenticate(username, password):
-    """Check if the username and password are correct"""
-    if username in users:
-        hashed_password = hashlib.sha256(password.encode()).hexdigest()
-        if hashed_password == users[username]:
-            return True
-    return False
+      
+        table_df = session.sql(f"SELECT * FROM {table_name}")
 
-def main():
-    """Create the login page using Streamlit"""
-    st.title("Login Page")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+        
+        columns = table_df.columns
 
-    if st.button("Login"):
-        if authenticate(username, password):
-            st.success("Login successful! You can now access the application.")
-            # Add code here to grant access to the application
+        
+        null_columns = []
+        for column in columns:
+            null_count = table_df.filter(table_df[column].isNull()).count()
+            if null_count > 0:
+                null_columns.append(column)
+
+        if null_columns:
+            
+            for column in null_columns:
+                table_check=session.sql(f"ALTER TABLE {table_name} DROP COLUMN {column}")
+                print(table_check)
+            print("Null columns dropped successfully.")
+            print(column)
         else:
-            st.error("Incorrect username or password. Please try again.")
+            print("No nullable columns found in the table.")
 
-if __name__ == "__main__":
-    main()
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        
+        session.close()
+
+
+drop_null_columns('YELP_ACADEMIC_DATASET_CHECKIN')
